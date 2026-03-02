@@ -3,46 +3,58 @@ import requests
 import pandas as pd
 import plotly.graph_objects as go
 
-# 1. Глобальный конфиг
-st.set_page_config(page_title="JDM Sniper Intelligence", page_icon="🏎️", layout="wide")
+# 1. ГЛОБАЛЬНАЯ НАСТРОЙКА
+st.set_page_config(page_title="JDM Sniper Terminal", page_icon="🏎️", layout="wide")
 
-# 2. ПРОФЕССИОНАЛЬНЫЙ UI СТИЛЬ (Modern Steel & Indigo)
+# 2. ЖЕСТКИЙ ФИКС КОНТРАСТНОСТИ (Яркий текст на темном фоне)
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+    /* Фон всей страницы */
+    .stApp { background-color: #0f172a; }
 
-    .stApp { background-color: #0f172a; font-family: 'Inter', sans-serif; color: #f1f5f9; }
+    /* Стилизация метрик (Цифр) */
+    [data-testid="stMetricValue"] {
+        color: #ffffff !important; 
+        font-size: 36px !important; 
+        font-weight: 800 !important;
+    }
 
-    /* Стилизация карточек */
-    .report-card {
+    /* Стилизация подписей к метрикам */
+    [data-testid="stMetricLabel"] p {
+        color: #94a3b8 !important; 
+        font-size: 16px !important;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    /* Цвет ROI (Зеленый бабл) */
+    [data-testid="stMetricDelta"] svg { fill: #10b981 !important; }
+    [data-testid="stMetricDelta"] div { color: #10b981 !important; font-weight: 700; }
+
+    /* Карточки результатов */
+    div[data-testid="stMetric"] {
         background-color: #1e293b;
-        padding: 25px;
-        border-radius: 12px;
         border: 1px solid #334155;
-        margin-bottom: 20px;
+        border-radius: 12px;
+        padding: 20px !important;
     }
 
     /* Заголовки */
-    h1, h2, h3 { color: #f8fafc !important; font-weight: 800 !important; }
+    h1, h2, h3 { color: #ffffff !important; font-family: 'Inter', sans-serif; }
 
     /* Кнопка */
     .stButton>button {
-        background: #3b82f6 !important;
+        background-color: #3b82f6 !important;
         color: white !important;
         border: none !important;
         font-weight: 700 !important;
-        padding: 12px !important;
-        width: 100%;
-        border-radius: 8px !important;
-        transition: 0.3s;
+        height: 3.5rem;
+        border-radius: 10px !important;
     }
-    .stButton>button:hover { background: #2563eb !important; transform: translateY(-2px); }
 
-    /* Таблицы */
-    .stDataFrame { background-color: #1e293b; border-radius: 10px; }
-
-    /* Скрытие мусора */
-    header, footer { visibility: hidden; }
+    /* Боковая панель */
+    [data-testid="stSidebar"] { background-color: #1e293b !important; }
+    [data-testid="stSidebar"] * { color: white !important; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -51,14 +63,12 @@ BASE_URL = "http://127.0.0.1:8000"
 if "token" not in st.session_state:
     st.session_state.token = None
 
-# --- SIDEBAR (СТРОГИЙ СТИЛЬ) ---
+# --- SIDEBAR ---
 with st.sidebar:
-    st.markdown("<h2 style='color: #3b82f6;'>JDM SNIPER</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='color: #94a3b8;'>Professional Import Terminal</p>", unsafe_allow_html=True)
+    st.markdown("## 🏎️ JDM SNIPER")
     st.write("---")
-
     if st.session_state.token:
-        menu = st.radio("NAVIGATION", ["🚀 Analysis Terminal", "📊 Archive Log"])
+        menu = st.radio("NAVIGATION", ["🚀 Analysis Terminal", "📊 History Archive"])
         st.write("---")
         if st.button("Logout"):
             st.session_state.token = None
@@ -66,50 +76,46 @@ with st.sidebar:
     else:
         menu = "Auth"
 
-# --- MAIN CONTENT ---
+# --- MAIN ---
 if menu == "Auth":
-    _, col, _ = st.columns([1, 1.2, 1])
+    _, col, _ = st.columns([1, 1.5, 1])
     with col:
-        st.markdown('<div class="report-card">', unsafe_allow_html=True)
-        st.subheader("System Access")
-        tab1, tab2 = st.tabs(["Login", "Register"])
-        with tab1:
+        st.subheader("System Login")
+        t1, t2 = st.tabs(["Login", "Register"])
+        with t1:
             u = st.text_input("Username")
             p = st.text_input("Password", type="password")
-            if st.button("ACCESS TERMINAL"):
+            if st.button("ENTER TERMINAL"):
                 try:
                     res = requests.post(f"{BASE_URL}/token", data={"username": u, "password": p})
                     if res.status_code == 200:
                         st.session_state.token = res.json()["access_token"]
                         st.rerun()
                     else:
-                        st.error("Access Denied")
+                        st.error("Wrong credentials")
                 except:
-                    st.error("Backend Offline")
-        with tab2:
-            nu = st.text_input("New Username")
-            np = st.text_input("New Password", type="password")
+                    st.error("Backend offline")
+        with t2:
+            nu = st.text_input("New User")
+            np = st.text_input("New Pass", type="password")
             if st.button("CREATE ACCOUNT"):
                 requests.post(f"{BASE_URL}/register", json={"username": nu, "password": np})
-                st.success("User created!")
-        st.markdown('</div>', unsafe_allow_html=True)
+                st.success("User created! Switch to Login.")
 
 elif menu == "🚀 Analysis Terminal":
-    st.title("Market Intelligence")
+    st.title("Market Intelligence Engine")
 
-    # СЕКЦИЯ ВВОДА
+    # ВВОД ДАННЫХ
     with st.container():
-        st.markdown('<div class="report-card">', unsafe_allow_html=True)
         c1, c2, c3, c4 = st.columns(4)
-        brand = c1.selectbox("Manufacturer", ["Nissan", "Toyota", "Mazda", "Subaru", "Mitsubishi", "Honda"])
-        model = c2.text_input("Model Name", "Skyline GT-R R34")
+        brand = c1.selectbox("Manufacturer", ["Nissan", "Toyota", "Mazda", "Subaru", "Honda", "Mitsubishi"])
+        model = c2.text_input("Model Name", placeholder="e.g. Skyline")
         year = c3.number_input("Year", 1980, 2026, 1999)
-        price_jpy = c4.number_input("Auction Price (JPY)", min_value=100000, value=4000000, step=100000)
+        price_jpy = c4.number_input("Auction Bid (JPY)", min_value=100000, value=3500000, step=100000)
 
-        analyze = st.button("GENERATE INVESTMENT REPORT")
-        st.markdown('</div>', unsafe_allow_html=True)
+        submit = st.button("RUN FINANCIAL MODEL")
 
-    if analyze:
+    if submit:
         headers = {"Authorization": f"Bearer {st.session_state.token}"}
         payload = {"brand": brand, "model": model, "year": year, "price_jpy": price_jpy}
         res = requests.post(f"{BASE_URL}/calculate", json=payload, headers=headers)
@@ -117,66 +123,47 @@ elif menu == "🚀 Analysis Terminal":
         if res.status_code == 200:
             data = res.json()
 
-            # РАСЧЕТЫ ДЛЯ СРАВНЕНИЯ (ПРИБЫЛЬ)
-            duty = data['price_eur_net'] * 0.10  # 10% Пошлина
-            total_invested = data['total_price'] + duty
-            est_eu_market_value = total_invested * 1.35  # Симуляция: +35% цена в Европе
-            net_profit = est_eu_market_value - total_invested
+            st.markdown("---")
+            st.subheader(f"Investment Report: {brand} {model} ({year})")
 
-            # --- ВЕРХНЯЯ ПАНЕЛЬ С ГЛАВНЫМИ ЦИФРАМИ ---
-            st.markdown("### 📋 Executive Summary")
+            # ГЛАВНЫЕ МЕТРИКИ (Теперь они яркие и читаемые!)
             m1, m2, m3 = st.columns(3)
-            m1.metric("Total Investment", f"€{total_invested:,.2f}", help="Price + Shipping + Duty + VAT")
-            m2.metric("EU Market Value", f"€{est_eu_market_value:,.2f}",
-                      help="Estimated resale price in Germany/Slovakia")
-            m3.metric("Potential Profit", f"€{net_profit:,.2f}", delta=f"{35}% ROI", delta_color="normal")
+            m1.metric("TOTAL INVESTMENT", f"€{data['total_price']:,.2f}")
+            m2.metric("EU MARKET VALUE", f"€{data['market_value']:,.2f}")
+            m3.metric("POTENTIAL PROFIT", f"€{data['potential_profit']:,.2f}", delta=f"{data['roi']}% ROI")
 
-            # --- ПОДРОБНЫЙ РАЗБОР ---
+            # РАЗБОР И ГРАФИК
             st.write("##")
-            col_table, col_chart = st.columns([1, 1])
+            col_l, col_r = st.columns([1, 1.2])
 
-            with col_table:
-                st.markdown("**Cost Breakdown (Detailed)**")
-                breakdown_data = {
-                    "Description": ["Net Car Price (Japan)", "EU Import Duty (10%)", "VAT / DPH (20%)",
-                                    "Logistics & Fees"],
-                    "Amount (EUR)": [f"€{data['price_eur_net']:,.2f}", f"€{duty:,.2f}", f"€{data['dph_amount']:,.2f}",
-                                     "Included"]
-                }
-                st.table(pd.DataFrame(breakdown_data))
+            with col_l:
+                st.markdown("### 📝 Financial Breakdown")
+                st.write(f"✅ **Net Car Price:** €{data['price_eur_net']:,.2f}")
+                st.write(f"🏛️ **EU Customs Duty (10%):** €{data['duty_amount']:,.2f}")
+                st.write(f"📑 **VAT / DPH (20%):** €{data['dph_amount']:,.2f}")
+                st.write(f"⚓ **Logistics (Fixed):** €1,800.00")
 
-            with col_chart:
-                st.markdown("**Budget Distribution**")
-                # Красивый Donut Chart
+            with col_r:
                 fig = go.Figure(data=[go.Pie(
-                    labels=['Car Price', 'Taxes (Duty+VAT)', 'Profit Margin'],
-                    values=[data['price_eur_net'], duty + data['dph_amount'], net_profit],
-                    hole=.5,
-                    marker_colors=['#3b82f6', '#ef4444', '#10b981']
+                    labels=['Net Price', 'Taxes', 'Profit'],
+                    values=[data['price_eur_net'], data['duty_amount'] + data['dph_amount'], data['potential_profit']],
+                    hole=.5, marker_colors=['#3b82f6', '#ef4444', '#10b981']
                 )])
                 fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', font_color="white", height=300,
                                   margin=dict(t=0, b=0, l=0, r=0))
                 st.plotly_chart(fig, use_container_width=True)
-
-            # ВЕРДИКТ
-            st.info(
-                f"💡 **Strategy:** To maximize profit, consider shipping to a low-cost port and verifying the {brand}'s service history.")
         else:
-            st.error("Authentication expired. Please login again.")
+            st.error("Error: Session expired or backend down.")
 
-elif menu == "📊 Archive Log":
-    st.title("Transaction History")
+elif menu == "📊 History Archive":
+    st.header("Search History")
     headers = {"Authorization": f"Bearer {st.session_state.token}"}
     res = requests.get(f"{BASE_URL}/history", headers=headers)
-
     if res.status_code == 200:
         data = res.json()
         if data:
             df = pd.DataFrame(data)
-            df_display = df[['brand', 'model', 'price_jpy', 'total_price']].copy()
-            df_display.columns = ['Brand', 'Model', 'JPY Bid', 'Total Cost (EUR)']
-            st.markdown('<div class="report-card">', unsafe_allow_html=True)
-            st.dataframe(df_display, use_container_width=True, hide_index=True)
-            st.markdown('</div>', unsafe_allow_html=True)
+            st.dataframe(df[['brand', 'model', 'price_jpy', 'total_price', 'potential_profit']],
+                         use_container_width=True)
         else:
-            st.info("No data available in your personal archive.")
+            st.info("No records found.")

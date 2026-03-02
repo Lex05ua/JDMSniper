@@ -90,33 +90,20 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
 # --- МАРШРУТЫ ЛОГИКИ (JDM LOGIC) ---
 
 @app.post("/calculate", response_model=schemas.CarResponse)
-async def create_calculation(
-        car: schemas.CarCreate,
-        db: Session = Depends(get_db),
-        current_user: models.UserDB = Depends(get_current_user)  # ЗАЩИТА ВКЛЮЧЕНА
-):
-    """Считает цену и налоги, ПРИВЯЗЫВАЯ машину к текущему пользователю."""
-
-    # 1. Получаем курс и считаем (из файла services.py)
+async def create_calculation(car: schemas.CarCreate, db: Session = Depends(get_db),
+                             current_user: models.UserDB = Depends(get_current_user)):
     rate = await services.get_jpy_rate()
-    costs = services.calculate_costs(car.price_jpy, rate)
+    # Вызываем расчеты из сервиса
+    res = services.calculate_full_import_logic(car.price_jpy, rate, car.year) # Добавь car.year
 
-    # 2. Создаем запись в базе
-    db_car = models.CarDB(
-        brand=car.brand,
-        model=car.model,
-        price_jpy=car.price_jpy,
-        price_eur_net=costs["net"],
-        dph_amount=costs["dph"],
-        total_price=costs["total"],
-        owner_id=current_user.id  # ПРИВЯЗКА К ТЕБЕ
+    new_car = models.CarDB(
+        brand=car.brand, model=car.model, price_jpy=car.price_jpy,
+        owner_id=current_user.id, **res  # Распаковываем все результаты расчета в базу
     )
-
-    db.add(db_car)
+    db.add(new_car)
     db.commit()
-    db.refresh(db_car)
-    return db_car
-
+    db.refresh(new_car)
+    return new_car
 
 @app.get("/history", response_model=list[schemas.CarResponse])
 def get_history(

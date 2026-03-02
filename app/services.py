@@ -1,56 +1,47 @@
 import httpx
 from fastapi import HTTPException
+from datetime import datetime
 
-# Асинхронная функция: пока летит запрос в интернет, сервер не тупит.
 async def get_jpy_rate():
     url = "https://open.er-api.com/v6/latest/EUR"
     async with httpx.AsyncClient() as client:
         try:
-            # await говорит: "подожди ответа, но не блокируй процессор"
             response = await client.get(url, timeout=5.0)
-            data = response.json()
-            return data['rates']['JPY']
-        except Exception:
-            # Если интернет отвалился, вежливо отвечаем 503 (Сервис недоступен)
+            return response.json()['rates']['JPY']
+        except:
             raise HTTPException(status_code=503, detail="Currency API error")
 
-def calculate_costs(price_jpy: int, rate: float):
-    # Чистая математика. Легко тестировать отдельно.
-    eur_net = price_jpy / rate
-    dph = eur_net * 0.20
-    return {
-        "net": round(eur_net, 2),
-        "dph": round(dph, 2),
-        "total": round(eur_net + dph, 2)
-    }
 
+def calculate_full_import_logic(price_jpy: int, rate: float, year: int):
+    # 1. Базовые расчеты
+    net_eur = price_jpy / rate
+    shipping = 1800.0
+    duty = (net_eur + shipping) * 0.10
+    dph = (net_eur + shipping + duty) * 0.20
+    total_cost = net_eur + shipping + duty + dph
 
-def calculate_full_import(price_jpy: int, rate: float, shipping_port: str):
-    # 1. Конвертация
-    net_price_eur = price_jpy / rate
+    # 2. ДИНАМИЧЕСКАЯ ЛОГИКА (Профит зависит от возраста)
+    car_age = datetime.now().year - year
 
-    # 2. Логистика (упрощенно по портам)
-    shipping_costs = {
-        "Gdansk (PL)": 1800,
-        "Rotterdam (NL)": 1500,
-        "Koper (SI) - closest to SK": 1900
-    }
-    ship_fee = shipping_costs.get(shipping_port, 2000)
+    if car_age >= 25:
+        markup = 1.50  # Классика (25+ лет) дает 50% наценки
+    elif car_age >= 15:
+        markup = 1.35  # Легенды (15-25 лет) дают 35%
+    else:
+        markup = 1.15  # Обычные авто дают 15%
 
-    # 3. Таможенная пошлина ЕС (10%) - считается от (Цена + Доставка)
-    customs_duty_rate = 0.10
-    duty_amount = (net_price_eur + ship_fee) * customs_duty_rate
+    market_value = total_cost * markup
+    profit = market_value - total_cost
 
-    # 4. НДС / DPH (20%) - считается от (Цена + Доставка + Пошлина)
-    vat_rate = 0.20
-    vat_amount = (net_price_eur + ship_fee + duty_amount) * vat_rate
-
-    total_cost = net_price_eur + ship_fee + duty_amount + vat_amount
+    # Считаем реальный ROI: (Прибыль / Затраты) * 100
+    actual_roi = (profit / total_cost) * 100
 
     return {
-        "net_price": round(net_price_eur, 2),
-        "shipping": ship_fee,
-        "duty": round(duty_amount, 2),
-        "vat": round(vat_amount, 2),
-        "total": round(total_cost, 2)
+        "price_eur_net": round(net_eur, 2),
+        "duty_amount": round(duty, 2),
+        "dph_amount": round(dph, 2),
+        "total_price": round(total_cost, 2),
+        "market_value": round(market_value, 2),
+        "potential_profit": round(profit, 2),
+        "roi": round(actual_roi, 1)  # Теперь ROI будет разным!
     }
