@@ -3,7 +3,7 @@ import requests
 import pandas as pd
 import plotly.graph_objects as go
 
-# 1. Глобальный конфиг
+# Глобальный конфиг
 st.set_page_config(page_title="JDM Sniper Intelligence", layout="wide")
 
 BASE_URL = "http://127.0.0.1:8000"
