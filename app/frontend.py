@@ -16,7 +16,6 @@ with st.sidebar:
     st.title("🏎️ JDM SNIPER")
     st.markdown("---")
     if st.session_state.token:
-        # Используем кнопки для навигации (это надежнее радио-кнопок)
         if st.button("🚀 Analysis Terminal", use_container_width=True):
             st.session_state.page = "calc"
         if st.button("📊 History Archive", use_container_width=True):
