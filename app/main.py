@@ -4,20 +4,20 @@ from sqlalchemy.orm import Session
 from jose import JWTError, jwt
 from fastapi.middleware.cors import CORSMiddleware
 
-# Импортируем наши модули
+# Импорт модулей
 from . import models, schemas, services, database, security
 
 # Инициализация приложения
 app = FastAPI(title="JDM Sniper Professional API")
 
-# Создаем таблицы в базе при старте
+# Создание таблицы в базе при старте
 models.Base.metadata.create_all(bind=database.engine)
 
-# Настройка схемы безопасности (FastAPI будет искать замочек в Swagger)
+# Настройка схемы безопасности (FastAPI in Swagger)
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
-# --- ЗАВИСИМОСТИ (DEPENDENCIES) ---
+# --- DEPENDENCIES ---
 
 def get_db():
     """Открывает сессию к базе данных и закрывает ее после завершения запроса."""
@@ -30,7 +30,6 @@ def get_db():
 
 async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     """
-    ГЛАВНЫЙ ОХРАННИК:
     1. Берет жетон (token) из заголовка запроса.
     2. Расшифровывает его.
     3. Ищет пользователя в базе.
@@ -41,7 +40,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        # Расшифровываем JWT
+        # расшифровка JWT
         payload = jwt.decode(token, security.SECRET_KEY, algorithms=[security.ALGORITHM])
         username: str = payload.get("sub")
         if username is None:
@@ -49,7 +48,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
     except JWTError:
         raise credentials_exception
 
-    # Ищем человека в базе
+    # поиск человека в базе
     user = db.query(models.UserDB).filter(models.UserDB.username == username).first()
     if user is None:
         raise credentials_exception
@@ -82,7 +81,7 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     if not user or not security.verify_password(form_data.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Incorrect username or password")
 
-    # Создаем жетон на основе имени пользователя
+    # создние жетона на основе имени пользователя
     access_token = security.create_access_token(data={"sub": user.username})
     return {"access_token": access_token, "token_type": "bearer"}
 
